@@ -7,3 +7,8 @@ This project involved the build and programming of an EV using an Arduino chip. 
 
 Materials:
 
+Motor
+Motor Driver
+Controller
+
+
