@@ -8,7 +8,39 @@ This project involved the build and programming of an EV using an Arduino chip. 
 Materials:
 
 Motor--DC Motor
+
 Motor Driver
+
 Controller--Arduino
 
 
+# Objective:
+
+My goal to design and build an electric-powered car that will travel 7-10 m (distance determined during the competition). The car will also push a water bottle set 2 m in front of the start 20.0 cmpast the finish distance. The program will be easily adjusted when the target distance is provided. Wiring will be clear and efficient and the mechanical design will allow the car to travel straight and without failure.
+
+# Engineering Process
+
+The project will document:
+
+Hardware and system design
+
+Motor-control programming
+
+Calibration and measurement
+
+Testing and performance analysis
+
+Design improvements based on results
+
+
+# In Progress: 
+
+Confirm the hardware configuration.
+
+Design the mechanism to contain water bottle.
+
+Develop and refine the motor-control program.
+
+Establish a repeatable testing procedure.
+
+Record performance data and document improvements.
