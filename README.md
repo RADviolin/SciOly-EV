@@ -1,4 +1,8 @@
 # SciOly-EV
+
+Autonomous electric vehicle designed for Sci Oly 2027 event.
+
+
 Code for electric vehicle event for science olympiad 2026-2027
 Arduino code for Science Olympiad EV, original code by MY. This code is used to design, control, testing, and performance optimization
 
