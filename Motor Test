@@ -1,0 +1,57 @@
+const int ENA = 5;       // Motor speed control
+const int IN1 = 8;       // Motor direction
+const int IN2 = 7;       // Motor direction
+const int BUTTON = 4;    // Button connected to GND
+
+bool motorRunning = false;
+bool lastButtonReading = HIGH;
+bool stableButtonState = HIGH;
+
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 50;
+
+void setup() {
+  pinMode(ENA, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(BUTTON, INPUT_PULLUP);
+
+  // Keep the motor stopped at startup
+  analogWrite(ENA, 0);
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+}
+
+void loop() {
+  bool reading = digitalRead(BUTTON);
+
+  if (reading != lastButtonReading) {
+    lastDebounceTime = millis();
+  }
+
+  if (millis() - lastDebounceTime >= debounceDelay) {
+    if (reading != stableButtonState) {
+      stableButtonState = reading;
+
+      // Button press: HIGH to LOW
+      if (stableButtonState == LOW) {
+        motorRunning = !motorRunning;
+        updateMotor();
+      }
+    }
+  }
+
+  lastButtonReading = reading;
+}
+
+void updateMotor() {
+  if (motorRunning) {
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    analogWrite(ENA, 255);  // Full commanded speed
+  } else {
+    analogWrite(ENA, 0);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+  }
+}
