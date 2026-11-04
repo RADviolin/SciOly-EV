@@ -1,7 +1,7 @@
 # SciOly-EV
 
 Project Overview:
-This project involved the build and programming of an EV using an Arduino chip. No kit was utilized, and the design was my own.  I did use ideas from TopFinishKits.com and a template for the car structure, but needed to modify to fit the correct dimensions, and add a button to start runs with a #2 pencil per rules, and design my own water bottle catch.
+This project involved the build and programming of an EV using an Arduino chip and C++. I did use ideas from TopFinishKits.com and a template for the car structure, but needed to modify to fit the correct dimensions and CAD a button and holder to start runs with a #2 pencil per rules, and designed and CADed my own water bottle catch.
 
 Code for electric vehicle event for science olympiad 2026-2027
 
@@ -41,6 +41,8 @@ Design the mechanism to contain water bottle.
 
 Develop and refine the motor-control program.
 
+Add in an adjustable time to code.
+
 Establish a repeatable testing procedure.
 
-Record performance data and document improvements.
+Record performance data and improvements.
