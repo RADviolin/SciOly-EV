@@ -1,0 +1,11 @@
+const int encoderPinB = 3;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(encoderPinB, INPUT_PULLUP);
+}
+
+void loop() {
+  Serial.println(digitalRead(encoderPinB));
+  delay(10);
+}
