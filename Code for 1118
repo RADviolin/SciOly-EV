@@ -1,0 +1,277 @@
+
+#include <Arduino.h>
+
+// Change these for each competition
+const float TARGET_DISTANCE_M = 7.0;
+const float TARGET_TIME_SECONDS = 15.0;
+
+const float REVERSE_DISTANCE_M = 0.22;
+const float REVERSE_TIME_RESERVE_SECONDS = 2.0;
+
+// Arduino pins
+const int encoderPinA = 2;
+const int encoderPinB = 3;
+const int startButtonPin = 4;
+
+const int motorPwmPin = 10;
+const int motorDirectionPin = 8;
+const int motorDirection2Pin = 7;
+
+// Wheel and encoder measurements
+const int pulsesPerRevolution = 540;
+const float wheelDiameter = 5.08;
+const float wheelCircumference = wheelDiameter * 3.14159;
+
+const float distancePerPulse =
+    wheelCircumference / pulsesPerRevolution;
+
+const float METERS_PER_PULSE =
+    distancePerPulse / 100.0 * 2.5362318841;
+
+// Calculate the pulses needed for the selected distance
+const long targetPulses =
+    TARGET_DISTANCE_M / METERS_PER_PULSE;
+
+const long reverseTargetPulses =
+    REVERSE_DISTANCE_M / METERS_PER_PULSE;
+
+// Motor speeds
+const int STARTING_SPEED = 180;
+const int MINIMUM_SPEED = 70;
+const int MAXIMUM_SPEED = 255;
+const int REVERSE_SPEED = 130;
+
+const float TIME_CORRECTION = 35.0;
+
+volatile long encoderPulses = 0;
+
+// Different parts of the run
+enum AutoState {
+  WAITING,
+  DRIVING_FORWARD,
+  WAITING_TO_REVERSE,
+  REVERSING,
+  FINISHED
+};
+
+AutoState currentState = WAITING;
+
+unsigned long startTime = 0;
+unsigned long lastSpeedUpdate = 0;
+
+float forwardTime = 0.0;
+float finalDistance = 0.0;
+float finalTime = 0.0;
+
+// Count encoder pulses as the wheel turns
+void encoderISR() {
+  encoderPulses++;
+}
+
+// Read the encoder count
+long getEncoderCount() {
+
+  noInterrupts();
+
+  long count = encoderPulses;
+
+  interrupts();
+
+  return count;
+}
+
+// Reset the encoder count
+void resetEncoder() {
+
+  noInterrupts();
+
+  encoderPulses = 0;
+
+  interrupts();
+}
+
+// Move forward
+void driveForward(int speed) {
+
+  digitalWrite(motorDirectionPin, HIGH);
+  digitalWrite(motorDirection2Pin, LOW);
+
+  analogWrite(motorPwmPin, speed);
+}
+
+// Move backward
+void driveReverse(int speed) {
+
+  digitalWrite(motorDirectionPin, LOW);
+  digitalWrite(motorDirection2Pin, HIGH);
+
+  analogWrite(motorPwmPin, speed);
+}
+
+// Stop the motor
+void stopMotor() {
+
+  analogWrite(motorPwmPin, 0);
+
+  digitalWrite(motorDirectionPin, LOW);
+  digitalWrite(motorDirection2Pin, LOW);
+}
+
+// Start the run
+void startRun() {
+
+  resetEncoder();
+
+  startTime = millis();
+
+  forwardTime =
+      TARGET_TIME_SECONDS - REVERSE_TIME_RESERVE_SECONDS;
+
+  if (forwardTime < 1.0) {
+    forwardTime = 1.0;
+  }
+
+  currentState = DRIVING_FORWARD;
+
+  driveForward(STARTING_SPEED);
+
+  Serial.println("Run Started");
+}
+
+// Main program
+void loop() {
+
+  unsigned long currentTime = millis();
+
+  float elapsedTime =
+      (currentTime - startTime) / 1000.0;
+
+  // Wait for the start button
+  if (currentState == WAITING) {
+
+    if (digitalRead(startButtonPin) == LOW) {
+
+      delay(30);
+
+      if (digitalRead(startButtonPin) == LOW) {
+        startRun();
+      }
+    }
+  }
+
+  // Drive forward to the target distance
+  else if (currentState == DRIVING_FORWARD) {
+
+    long currentPulses = getEncoderCount();
+
+    float distanceTraveled =
+        currentPulses * METERS_PER_PULSE;
+
+    float progress =
+        distanceTraveled / TARGET_DISTANCE_M;
+
+    float timeProgress =
+        elapsedTime / forwardTime;
+
+    float expectedDistance =
+        TARGET_DISTANCE_M * timeProgress;
+
+    float distanceError =
+        expectedDistance - distanceTraveled;
+
+    // Adjust motor speed
+    if (currentTime - lastSpeedUpdate >= 100) {
+
+      int motorSpeed =
+          STARTING_SPEED +
+          (int)(distanceError * TIME_CORRECTION);
+
+      motorSpeed = constrain(
+          motorSpeed,
+          MINIMUM_SPEED,
+          MAXIMUM_SPEED
+      );
+
+      // Slow down near the end
+      if (progress >= 0.90) {
+        motorSpeed = min(motorSpeed, 150);
+      }
+
+      if (progress >= 0.95) {
+        motorSpeed = min(motorSpeed, 120);
+      }
+
+      if (progress >= 0.98) {
+        motorSpeed = min(motorSpeed, 90);
+      }
+
+      driveForward(motorSpeed);
+
+      lastSpeedUpdate = currentTime;
+    }
+
+    // Stop when the target distance is reached
+    if (currentPulses >= targetPulses) {
+
+      stopMotor();
+
+      finalDistance = distanceTraveled;
+
+      currentState = WAITING_TO_REVERSE;
+
+      Serial.println("Forward Target Reached");
+    }
+  }
+
+  // Wait until it is time to reverse
+  else if (currentState == WAITING_TO_REVERSE) {
+
+    if (elapsedTime >= forwardTime) {
+
+      resetEncoder();
+
+      delay(100);
+
+      driveReverse(REVERSE_SPEED);
+
+      currentState = REVERSING;
+
+      Serial.println("Reversing...");
+    }
+  }
+
+  // Reverse at least 20 cm
+  else if (currentState == REVERSING) {
+
+    long reversePulses = getEncoderCount();
+
+    float reverseDistance =
+        reversePulses * METERS_PER_PULSE;
+
+    if (reversePulses >= reverseTargetPulses) {
+
+      stopMotor();
+
+      finalTime = elapsedTime;
+
+      currentState = FINISHED;
+
+      Serial.println("Run Complete");
+
+      Serial.print("Forward distance: ");
+      Serial.println(finalDistance, 3);
+
+      Serial.print("Reverse distance: ");
+      Serial.println(reverseDistance, 3);
+
+      Serial.print("Total time: ");
+      Serial.println(finalTime, 2);
+    }
+  }
+
+  // Keep the motor stopped after finishing
+  else if (currentState == FINISHED) {
+
+    stopMotor();
+  }
+}
